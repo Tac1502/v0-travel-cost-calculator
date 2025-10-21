@@ -1,12 +1,41 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Calculator, History, Car, Settings } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Calculator, History, Car, Settings, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { useEffect, useState } from "react"
+import type { User } from "@supabase/supabase-js"
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient()
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    const supabase = getSupabaseBrowserClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
 
   const links = [
     { href: "/", label: "計算", icon: Calculator },
@@ -22,7 +51,7 @@ export function Navigation() {
           <Link href="/" className="font-bold text-lg text-foreground">
             旅行費用計算
           </Link>
-          <div className="flex gap-1 ml-auto">
+          <div className="flex gap-1 ml-auto items-center">
             {links.map((link) => {
               const Icon = link.icon
               const isActive = pathname === link.href
@@ -42,6 +71,17 @@ export function Navigation() {
                 </Link>
               )
             })}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="ml-2 text-muted-foreground hover:text-accent-foreground"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                ログアウト
+              </Button>
+            )}
           </div>
         </div>
       </div>

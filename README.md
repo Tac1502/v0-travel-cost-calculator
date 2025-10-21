@@ -1,30 +1,9 @@
-# Travel cost calculator
+旅行経路＋費用算出アプリ（Travel Cost Estimator）
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+概要 出発地と目的地を入力するだけで、高速料金・燃料費・レンタカー・駐車場代などを自動で計算し、総費用と割り勘金額を表示するアプリです。 旅行や出張の事前見積もりを簡単に行えることを目的としています。
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/keita15baseball-2034s-projects/v0-travel-cost-calculator)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/2Ra4jeiNU2M)
+主な機能 ・経路検索：Google Maps APIを利用して距離・所要時間を自動取得 ・費用算出：距離×燃費×燃料単価＋高速料金係数で概算費用を計算 ・割り勘計算：人数入力で1人あたりの金額を自動算出 ・車両プリセット保存：よく使う車両の燃費・種別を保存可能 ・旅の履歴保存：Supabaseで過去の計算結果を管理 ・設定管理：燃料単価や端数処理モードをユーザー単位で設定 ・認証機能：Supabase Authによるログイン／ログアウト
 
-## Overview
+技術スタック ・フロントエンド Next.js, TypeScript, Tailwind CSS, v0 ・バックエンド Supabase (Auth / Database / Storage) ・外部API Google Maps Platform (Directions / Places) ・開発支援 Figma（UI設計）, GitHub（バージョン管理）
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
-
-## Deployment
-
-Your project is live at:
-
-**[https://vercel.com/keita15baseball-2034s-projects/v0-travel-cost-calculator](https://vercel.com/keita15baseball-2034s-projects/v0-travel-cost-calculator)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/2Ra4jeiNU2M](https://v0.app/chat/projects/2Ra4jeiNU2M)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+作者メモ このアプリは、未経験エンジニアとしてのポートフォリオ開発を目的に作成しています。 「業務効率化 × 技術による仕組み化」をテーマに、実務でも活用できる構成・設計を意識しました。

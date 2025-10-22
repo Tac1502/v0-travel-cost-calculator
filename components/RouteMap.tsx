@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Loader } from "@googlemaps/js-api-loader"
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
 
 interface RouteMapProps {
   polyline: string | null
@@ -23,19 +23,19 @@ export function RouteMap({ polyline, origin, destination }: RouteMapProps) {
       return
     }
 
-    if (!mapRef.current) {
-      return
-    }
-
-    const loader = new Loader({
+    setOptions({
       apiKey,
       version: "weekly",
-      libraries: ["geometry"],
     })
 
-    loader
-      .load()
-      .then((google) => {
+    console.log("ロード前")
+
+    const loadMap = async () => {
+      try {       
+        const { Map } = await importLibrary("maps") as google.maps.MapsLibrary;
+        // geometryライブラリはpolylineデコードに必要なので別途インポート
+        const geometry = await importLibrary("geometry") as google.maps.GeometryLibrary;
+
         console.log("[v0] Google Maps loaded successfully")
 
         if (!mapRef.current) return
@@ -77,12 +77,12 @@ export function RouteMap({ polyline, origin, destination }: RouteMapProps) {
         }
 
         setIsLoading(false)
-      })
-      .catch((err) => {
+      } catch(err) {
         console.error("[v0] Error loading Google Maps:", err)
         setError("地図の読み込みに失敗しました")
         setIsLoading(false)
-      })
+      }
+    }
   }, [polyline])
 
   if (error) {

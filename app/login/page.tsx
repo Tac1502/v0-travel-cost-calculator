@@ -85,7 +85,6 @@ export default function LoginPage() {
 
       const safeRedirect = getSafeRedirect(redirectParam)
       router.push(safeRedirect)
-      router.refresh()
     } catch (e: any) {
       console.error("[v0] Login error:", e)
       setErrMsg(e?.message ?? "ログインで予期せぬエラーが発生しました")

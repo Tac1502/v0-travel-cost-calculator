@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import type { RouteSearchParams, RouteResult } from "@/lib/types"
+import type { RouteSearchParams } from "@/lib/types"
 
 // Mock function to simulate Google Maps API response
 // Replace this with actual Google Maps API call when ready
@@ -47,25 +47,35 @@ function calculateFuelCost(distance_km: number, fuelEfficiency: number, fuelPric
 
 export async function POST(request: NextRequest) {
   try {
-    const body: RouteSearchParams = await request.json()
-    const { origin, destination, fuelEfficiency, headcount } = body
+    const body: RouteSearchParams & { distance_km?: number; duration_min?: number } = await request.json()
+    const { origin, destination, fuelEfficiency, headcount, distance_km, duration_min } = body
 
     if (!origin || !destination || !fuelEfficiency || !headcount) {
       return NextResponse.json({ error: "必須パラメータが不足しています" }, { status: 400 })
     }
 
-    // Mock route search (replace with actual Google Maps API call)
-    const { distance_km, duration_min } = mockRouteSearch(origin, destination)
+    let distanceKm: number
+    let durationMin: number
+
+    if (distance_km !== undefined && duration_min !== undefined) {
+      distanceKm = distance_km
+      durationMin = duration_min
+    } else {
+      // Fallback to mock data
+      const mockResult = mockRouteSearch(origin, destination)
+      distanceKm = mockResult.distance_km
+      durationMin = mockResult.duration_min
+    }
 
     // Calculate costs
-    const toll_est = calculateTollEstimate(distance_km)
-    const fuel_cost = calculateFuelCost(distance_km, fuelEfficiency)
+    const toll_est = calculateTollEstimate(distanceKm)
+    const fuel_cost = calculateFuelCost(distanceKm, fuelEfficiency)
     const total = toll_est + fuel_cost
     const per_person = Math.round(total / headcount)
 
-    const result: RouteResult = {
-      distance_km,
-      duration_min,
+    const result = {
+      distance_km: distanceKm,
+      duration_min: durationMin,
       toll_est,
       fuel_cost,
       total,

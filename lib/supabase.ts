@@ -1,42 +1,26 @@
-import { createClient } from "@supabase/supabase-js"
-import type { Database } from "./types"
-import { cookies } from "next/headers"
+"use client"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { createBrowserClient } from "@supabase/ssr"
 
-let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
+let browserClient: ReturnType<typeof createBrowserClient> | null = null
 
 export function getSupabaseBrowserClient() {
-  if (supabaseClient) {
-    return supabaseClient
+  if (browserClient) return browserClient
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase環境変数が設定されていません")
   }
 
-  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey)
-
-  return supabaseClient
-}
-
-export function getSupabaseClient() {
-  return getSupabaseBrowserClient()
-}
-
-export const supabase = getSupabaseClient()
-
-export async function getSupabaseServerClient() {
-  const cookieStore = await cookies()
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: false,
-    },
-    global: {
-      headers: {
-        cookie: cookieStore
-          .getAll()
-          .map((c) => `${c.name}=${c.value}`)
-          .join("; "),
-      },
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: "pkce",
     },
   })
+  return browserClient
 }

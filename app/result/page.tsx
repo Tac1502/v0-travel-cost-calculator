@@ -5,14 +5,31 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, MapPin, Clock, Fuel, Coins, Car, ParkingSquare, Users } from "lucide-react"
-import type { RouteResult } from "@/lib/types"
 import { Navigation } from "@/components/navigation"
+import { useRequireAuth } from "@/hooks/use-require-auth"
+import { RouteMap } from "@/components/RouteMap"
+
+interface RouteData {
+  distanceKm: number
+  durationMin: number
+  overviewPolyline: string
+  summary: string
+}
+
+interface CostData {
+  toll_est: number
+  fuel_cost: number
+  total: number
+  per_person: number
+}
 
 function ResultPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { loading: authLoading, authenticated } = useRequireAuth()
   const [isLoading, setIsLoading] = useState(true)
-  const [result, setResult] = useState<RouteResult | null>(null)
+  const [routeData, setRouteData] = useState<RouteData | null>(null)
+  const [costData, setCostData] = useState<CostData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const origin = searchParams.get("origin") || ""
@@ -21,37 +38,62 @@ function ResultPageContent() {
   const headcount = Number.parseInt(searchParams.get("headcount") || "1")
 
   useEffect(() => {
-    const fetchRouteData = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch("/api/route/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            origin,
-            destination,
-            fuelEfficiency,
-            headcount,
-          }),
-        })
+    if (!origin || !destination) {
+      setError("出発地と目的地を指定してください")
+      setIsLoading(false)
+      return
+    }
 
-        if (!response.ok) {
-          throw new Error("経路の検索に失敗しました")
+    if (!authLoading && authenticated) {
+      const fetchData = async () => {
+        try {
+          setIsLoading(true)
+          console.log("[v0] Fetching route data for:", origin, "→", destination)
+
+          const routeResponse = await fetch(
+            `/api/maps/route?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`,
+          )
+
+          if (!routeResponse.ok) {
+            const errorData = await routeResponse.json()
+            throw new Error(errorData.error || "ルートの取得に失敗しました")
+          }
+
+          const route: RouteData = await routeResponse.json()
+          console.log("[v0] Route data received:", route)
+          setRouteData(route)
+
+          const costResponse = await fetch("/api/route/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              origin,
+              destination,
+              fuelEfficiency,
+              headcount,
+              distance_km: route.distanceKm,
+              duration_min: route.durationMin,
+            }),
+          })
+
+          if (!costResponse.ok) {
+            throw new Error("費用の計算に失敗しました")
+          }
+
+          const costs: CostData = await costResponse.json()
+          console.log("[v0] Cost data received:", costs)
+          setCostData(costs)
+        } catch (err) {
+          console.error("[v0] Error fetching data:", err)
+          setError(err instanceof Error ? err.message : "エラーが発生しました")
+        } finally {
+          setIsLoading(false)
         }
-
-        const data = await response.json()
-        setResult(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "エラーが発生しました")
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    if (origin && destination) {
-      fetchRouteData()
+      fetchData()
     }
-  }, [origin, destination, fuelEfficiency, headcount])
+  }, [authLoading, authenticated, origin, destination, fuelEfficiency, headcount])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("ja-JP", {
@@ -70,18 +112,22 @@ function ResultPageContent() {
     return `${hours}時間${mins}分`
   }
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">経路を検索中...</p>
+          <p className="text-muted-foreground">{authLoading ? "認証確認中..." : "経路を検索中..."}</p>
         </div>
       </div>
     )
   }
 
-  if (error || !result) {
+  if (!authenticated) {
+    return null
+  }
+
+  if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-8">
         <Card className="max-w-md w-full">
@@ -89,13 +135,24 @@ function ResultPageContent() {
             <CardTitle className="text-destructive">エラー</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">{error || "データの取得に失敗しました"}</p>
+            <p className="mb-4">{error}</p>
             <Button onClick={() => router.push("/")} className="w-full">
               <ArrowLeft className="w-4 h-4 mr-2" />
               ホームに戻る
             </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  if (!routeData || !costData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">データを読み込み中...</p>
+        </div>
       </div>
     )
   }
@@ -118,24 +175,16 @@ function ResultPageContent() {
                 {origin} → {destination}
               </span>
             </div>
+            {routeData.summary && <p className="text-sm text-muted-foreground mt-1">経由: {routeData.summary}</p>}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Map placeholder */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>ルート地図</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted rounded-lg h-96 flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <MapPin className="w-12 h-12 mx-auto mb-2" />
-                    <p>地図表示（Google Maps API統合後に表示されます）</p>
-                    <p className="text-sm mt-2">
-                      {origin} → {destination}
-                    </p>
-                  </div>
-                </div>
+                <RouteMap polyline={routeData.overviewPolyline} origin={origin} destination={destination} />
               </CardContent>
             </Card>
 
@@ -150,14 +199,14 @@ function ResultPageContent() {
                     <MapPin className="w-4 h-4" />
                     <span>距離</span>
                   </div>
-                  <span className="font-semibold">{formatDistance(result.distance_km)}</span>
+                  <span className="font-semibold">{formatDistance(routeData.distanceKm)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="w-4 h-4" />
                     <span>所要時間</span>
                   </div>
-                  <span className="font-semibold">{formatDuration(result.duration_min)}</span>
+                  <span className="font-semibold">{formatDuration(routeData.durationMin)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -180,14 +229,14 @@ function ResultPageContent() {
                     <Coins className="w-4 h-4" />
                     <span>高速料金</span>
                   </div>
-                  <span className="font-semibold">{formatCurrency(result.toll_est)}</span>
+                  <span className="font-semibold">{formatCurrency(costData.toll_est)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Fuel className="w-4 h-4" />
                     <span>燃料費</span>
                   </div>
-                  <span className="font-semibold">{formatCurrency(result.fuel_cost)}</span>
+                  <span className="font-semibold">{formatCurrency(costData.fuel_cost)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -212,11 +261,11 @@ function ResultPageContent() {
                 <div className="grid grid-cols-2 gap-8">
                   <div>
                     <p className="text-sm opacity-90 mb-2">合計金額</p>
-                    <p className="text-4xl font-bold">{formatCurrency(result.total)}</p>
+                    <p className="text-4xl font-bold">{formatCurrency(costData.total)}</p>
                   </div>
                   <div>
                     <p className="text-sm opacity-90 mb-2">一人あたり</p>
-                    <p className="text-4xl font-bold">{formatCurrency(result.per_person)}</p>
+                    <p className="text-4xl font-bold">{formatCurrency(costData.per_person)}</p>
                   </div>
                 </div>
               </CardContent>

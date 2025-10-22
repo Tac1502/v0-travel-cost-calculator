@@ -33,7 +33,7 @@ export function Navigation() {
   const handleLogout = async () => {
     const supabase = getSupabaseBrowserClient()
     await supabase.auth.signOut()
-    router.push("/login")
+    router.push("/")
     router.refresh()
   }
 
@@ -71,7 +71,7 @@ export function Navigation() {
                 </Link>
               )
             })}
-            {user && (
+            {user ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -81,6 +81,12 @@ export function Navigation() {
                 <LogOut className="w-4 h-4 mr-2" />
                 ログアウト
               </Button>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="ml-2 text-muted-foreground hover:text-accent-foreground">
+                  ログイン
+                </Button>
+              </Link>
             )}
           </div>
         </div>
@@ -88,3 +94,5 @@ export function Navigation() {
     </nav>
   )
 }
+
+export default Navigation

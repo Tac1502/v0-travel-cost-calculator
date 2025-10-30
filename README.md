@@ -14,6 +14,9 @@
 
 ---
 
+##  サイトURL
+　　https://travel-cost-calculator-nu.vercel.app/
+
 ##  主な機能
 -  **経路検索**：Google Maps Directions/Places APIで**距離・所要時間**を自動取得  
 -  **費用算出**：`距離 × (燃料単価 / 燃費) + 高速料金 + レンタカー + 駐車場` を概算  

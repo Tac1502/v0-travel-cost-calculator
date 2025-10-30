@@ -1,9 +1,57 @@
-旅行経路＋費用算出アプリ（Travel Cost Estimator）
+<h1 align="center">🚗 旅行経路＋費用算出アプリ — <br/>Travel Cost Estimator</h1>
 
-概要 出発地と目的地を入力するだけで、高速料金・燃料費・レンタカー・駐車場代などを自動で計算し、総費用と割り勘金額を表示するアプリです。 旅行や出張の事前見積もりを簡単に行えることを目的としています。
+<p align="center">
+  出発地と目的地を入力するだけで、<b>高速料金・燃料費・レンタカー・駐車場代</b>などを自動で計算。<br/>
+  総費用と割り勘金額を一目で把握できる「旅の事前見積り」アプリです。
+</p>
 
-主な機能 ・経路検索：Google Maps APIを利用して距離・所要時間を自動取得 ・費用算出：距離×燃費×燃料単価＋高速料金係数で概算費用を計算 ・割り勘計算：人数入力で1人あたりの金額を自動算出 ・車両プリセット保存：よく使う車両の燃費・種別を保存可能 ・旅の履歴保存：Supabaseで過去の計算結果を管理 ・設定管理：燃料単価や端数処理モードをユーザー単位で設定 ・認証機能：Supabase Authによるログイン／ログアウト
+<p align="center">
+  <!-- Badges -->
+  <a href="#"><img alt="Next.js" src="https://img.shields.io/badge/Next.js-000?logo=nextdotjs&logoColor=white"></a>
+  <a href="#"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white"></a>
+  <a href="#"><img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-38BDF8?logo=tailwindcss&logoColor=white"></a>
+  <a href="#"><img alt="Supabase" src="https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=111827"></a>
+  <a href="#"><img alt="Google Maps" src="https://img.shields.io/badge/Google%20Maps%20API-4285F4?logo=googlemaps&logoColor=white"></a>
+  <a href="#"><img alt="Figma" src="https://img.shields.io/badge/Figma-F24E1E?logo=figma&logoColor=white"></a>
+  <a href="#"><img alt="License" src="https://img.shields.io/badge/License-MIT-informational"></a>
+  <a href="#"><img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen"></a>
+</p>
 
-技術スタック ・フロントエンド Next.js, TypeScript, Tailwind CSS, v0 ・バックエンド Supabase (Auth / Database / Storage) ・外部API Google Maps Platform (Directions / Places) ・開発支援 Figma（UI設計）, GitHub（バージョン管理）
+---
 
-作者メモ このアプリは、未経験エンジニアとしてのポートフォリオ開発を目的に作成しています。 「業務効率化 × 技術による仕組み化」をテーマに、実務でも活用できる構成・設計を意識しました。
+## 🧭 概要
+出発地と目的地を入力すると、Google Mapsから**距離・所要時間**を取得し、  
+**燃料費 / 高速料金 / レンタカー / 駐車場**を合算。**総額**と**割り勘**を表示します。  
+旅行や出張の**事前見積もり**を簡単・綺麗に。
+
+> 例）距離×燃費×燃料単価＋高速料金係数＋レンタカー＋駐車場 → **総額** → 人数で割って**1人あたり**
+
+---
+
+## ✨ 主な機能
+- 🔎 **経路検索**：Google Maps Directions/Places APIで**距離・所要時間**を自動取得  
+- 🧮 **費用算出**：`距離 × (燃料単価 / 燃費) + 高速料金 + レンタカー + 駐車場` を概算  
+- 👥 **割り勘計算**：人数入力で**1人あたり金額**を自動算出  
+- 🚘 **車両プリセット**：よく使う車の**燃費・種別**を保存して即呼び出し  
+- 🗂️ **旅の履歴保存**：Supabaseに**過去の計算結果**を保存・参照  
+- ⚙️ **設定管理**：**燃料単価**や**端数処理（四捨五入/切り上げ/切り捨て）**をユーザー単位で記憶  
+- 🔐 **認証**：**Supabase Auth**でログイン/ログアウト
+
+---
+
+## 🧾 算出ロジック（概要）
+distance_km: Google Maps API から取得
+fuel_cost = distance_km / fuel_efficiency_km_per_L * fuel_price_per_L
+toll_cost ≈ distance_km × toll_coefficient （地域/道路実費に合わせ係数調整）
+rent_cost = 任意（レンタカー利用時の固定/日割り）
+parking = 任意（目的地や時間に応じて固定/概算）
+total = fuel_cost + toll_cost + rent_cost + parking
+per_person = ceil|round|floor( total / people )
+
+---
+
+## 🏗️ 技術スタック
+- **フロントエンド**：Next.js / TypeScript / Tailwind CSS / v0  
+- **バックエンド**：Supabase（Auth / Database / Storage）  
+- **外部API**：Google Maps Platform（Directions / Places）  
+- **開発支援**：Figma（UI設計）/ GitHub（バージョン管理）
